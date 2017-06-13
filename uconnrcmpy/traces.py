@@ -7,6 +7,7 @@ import numpy as np
 import cantera as ct
 from scipy import signal as sig
 from scipy.interpolate import UnivariateSpline
+from scipy.stats import linregress
 
 # Local imports
 from .constants import (one_atm_in_bar,
@@ -62,19 +63,22 @@ class VoltageTrace(object):
         """The cutoff frequency for the low-pass filter
 
         When setting the frequency, if the ``value`` is `None`,
-        determines the optimal cutoff frequency for a second-order
+        determines the optimal cutoff frequency for a first-order
         Butterworth low-pass filter by analyzing the root-mean-squared
         residuals for a sequence of cutoff frequencies. The residuals
         plotted as a function of the cutoff frequency tend to have a
         linear portion for a range of cutoff frequencies. Analysis of
-        typical data files from our RCM has shown this range to be
-        approximately from ``nyquist_freq*0.1`` to
-        ``nyquist_freq*0.5``. A line is fit to this portion of the
-        residuals curve and the intersection point of a horizontal
-        line through the y-intercept of the fit and the residuals
-        curve is used to determine the optimal cutoff frequency (see
-        Figure 2 in Yu et al. [1]_). The methodology is described by
-        Yu et al. [1]_, and the code is modifed from Duarte [2]_.
+        typical data files from our RCM has shown this range to start
+        near ``nyquist_freq*0.05``. The end point is determined by
+        looping through values from ``nyquist_freq*0.5`` to
+        ``nyquist_freq*0.1`` and finding the location where the
+        coefficient of determination of a linear fit is maximized.
+        A line is fit to this portion of the residuals curve and
+        the intersection point of a horizontal line through the
+        y-intercept of the fit and the residuals curve is used to
+        determine the optimal cutoff frequency (see Figure 2 in Yu
+        et al. [1]_). The methodology is described by Yu et al. [1]_,
+        and the code is modifed from Duarte [2]_.
 
         References
         ----------
@@ -94,21 +98,26 @@ class VoltageTrace(object):
     def filter_frequency(self, value):
         if value is None:
             nyquist_freq = self.frequency/2.0
-            # filtfilt applies the filter forwards then backwards to avoid phase offset, so 2 passes
-            n_passes = 2
             n_freqs = 101
-            # C corrects the frequencies for the multiple passes
-            C = (2**(1/n_passes) - 1)**0.25
-            freqs = np.linspace(nyquist_freq/n_freqs, nyquist_freq*C, n_freqs)
-            # The indices of the frequencies used for fitting the straight line
-            fit_freqs = np.arange(np.nonzero(freqs >= nyquist_freq/10)[0][0],
-                                  np.nonzero(freqs >= nyquist_freq*C/2)[0][0] + 1)
+            freqs = np.linspace(nyquist_freq/n_freqs, nyquist_freq, n_freqs)
             resid = np.zeros(n_freqs)
             for i, fc in enumerate(freqs):
-                b, a = sig.butter(2, (fc/C)/nyquist_freq)
+                b, a = sig.butter(1, fc/nyquist_freq)
                 yf = sig.filtfilt(b, a, self.signal[:, 1])
                 resid[i] = np.sqrt(np.mean((yf - self.signal[:, 1])**2))
-            _, intercept = np.polyfit(freqs[fit_freqs], resid[fit_freqs], 1)
+
+            end_points = np.linspace(0.5, 0.1, 9)
+            r_sq = np.zeros(len(end_points))
+            intercepts = np.zeros(len(end_points))
+            for i, end_point in enumerate(end_points):
+                # The indices of the frequencies used for fitting the straight line
+                fit_freqs = np.arange(np.nonzero(freqs >= nyquist_freq*0.05)[0][0],
+                                      np.nonzero(freqs >= nyquist_freq*end_point)[0][0] + 1)
+                _, intercepts[i], r, _, _ = linregress(freqs[fit_freqs], resid[fit_freqs])
+                r_sq[i] = r**2
+
+            intercept = intercepts[np.argmax(r_sq)]
+
             # The UnivariateSpline with s=0 forces the spline fit through every
             # data point in the array. The residuals are shifted down by the
             # intercept so that the root of the spline is the optimum cutoff
@@ -156,7 +165,7 @@ class VoltageTrace(object):
     def filtering(self, data):
         """Filter the input using a low-pass filter.
 
-        The filter is a second-order Butterworth filter, with the
+        The filter is a first-order Butterworth filter, with the
         cutoff frequency taken from the instance attribute
         `~VoltageTrace.filter_frequency`.
 
@@ -171,11 +180,7 @@ class VoltageTrace(object):
             1-D array of the same length as the input data
         """
         nyquist_freq = self.frequency/2.0
-        # filtfilt applies the filter forwards then backwards to avoid phase offset, so 2 passes
-        n_passes = 2
-        # C corrects the frequencies for the multiple passes
-        C = (2**(1/n_passes) - 1)**0.25
-        b, a = sig.butter(2, (self.filter_frequency/C)/nyquist_freq)
+        b, a = sig.butter(1, (self.filter_frequency)/nyquist_freq)
         return sig.filtfilt(b, a, data, padtype='odd', padlen=101, method='pad')
 
 
@@ -232,6 +237,8 @@ class ExperimentalPressureTrace(object):
 
         self.p_EOC, self.EOC_idx, self.is_reactive = self.find_EOC()
         self.derivative = self.calculate_derivative(self.pressure, self.time)
+        # Smooth the derivative with a moving average 151 points wide
+        self.derivative = sig.fftconvolve(self.derivative, np.ones(151)/151, mode='same')
         self.zeroed_time = self.time - self.time[self.EOC_idx]
 
     def __repr__(self):

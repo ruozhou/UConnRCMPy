@@ -39,7 +39,7 @@ install:
   - conda config --append channels cantera
   - conda config --append channels bryanwweber
   - conda config --append channels conda-forge
-  - conda update -q --all
+  - conda update -q conda
   - sed -i -e "s/\${PYTHON}/"${PYTHON}"/" environment.yml
   - if [[ -z "$TRAVIS_TAG" ]]; then
       conda env create -qf environment.yml;
@@ -54,21 +54,37 @@ script:
   - set -e
   - if [[ -z "$TRAVIS_TAG" ]]; then
       python setup.py test;
-      if [[ "$TRAVIS_OS_NAME" == "linux" && "$PYTHON" == "3.5" ]]; then
+      if [[ "$TRAVIS_OS_NAME" == "linux" && "$PYTHON" == "3.6" ]]; then
         git checkout -- environment.yml;
         conda install -q sphinx doctr;
         python setup.py install;
         cd docs;
         make html SPHINXOPTS="-W";
         cd ..;
-        doctr deploy --gh-pages-docs .;
+        doctr deploy .;
       fi
     else
       conda build conda.recipe --python=${PYTHON};
       anaconda -t $ANACONDA_TOKEN upload $HOME/miniconda/conda-bld/*/uconnrcmpy*.tar.bz2;
     fi
+  - set +e
 
 after_success:
   - if [[ -z "$TRAVIS_TAG" ]]; then
       bash <(curl -s https://codecov.io/bash);
     fi
+
+before_deploy:
+  - conda install pandoc
+  - pip install pypandoc
+
+deploy:
+  provider: pypi
+  user: bryanwweber
+  password:
+    secure: "P5wZ/zqLblGwbaqc3RbX4daqLwO6QOpMri8V3sVdVQ2a4nN7NBTfK1xK44eIfECSLdDcsv40LJZPduvBI35CUdww2bwPN45zm5A8+Cz9C5ZPlvDwOe3BD8vuzKjFgyzxGhdVAwVVIiTWHOWesYTNFqUTLtcDqwFAvEyL8CVuA5d3FgtM72i0NUroMEDoizBBaT5PW5BWSyA0XyId4SqYGYYm4FOts+GUDed0CWGtKuoq424EvWG+385UCBzhdUwhIbSfI3Uii53OIX/HtD8WIz5pXL/+ryZ+RSam7bZw2xpsqiCyXpae9Hiq/Z2poUFQu24GFBDCNBfe+K8VfL9AlZ5xTHnyekSES8iT7Xswlf0mYoLt93ThQKCBIb3+3oVKRlFXBLHZHjq30OJAlFb4e3IOIONbdmmYh39No7MIjtEQIPQzyTQ3F88TbdSyCqk+3FQM2j8HYb/LXHxzYZ4bxTDTfSXkGFaLHH1VUHnejiuu0jpar+NwOJUQur2uq3Zuifj3ovLVtYee34XxLJF6AGG3NoGqrwGRKXotUhN5HLP27vzqoVFBQ3VzxtbnpTIMbKwW9qGkE3cQoK7irPMgLWwh794mYlUVkbW3tWXB0bApMCQ7+KRvozosW2paO4g2eYZ7SdNpLNXk5FN9SmcHSxTZ0AdbuLHNYGr7an1H3gI="
+  on:
+    tags: true
+    condition: $TRAVIS_OS_NAME == "linux" && $PYTHON == "3.6"
+  distributions: "sdist bdist_wheel"
+  skip_upload_docs: true

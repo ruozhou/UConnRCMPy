@@ -11,13 +11,24 @@ with open(op.join(op.dirname(op.realpath(__file__)), 'README.md')) as readme_fil
 with open(op.join(op.dirname(op.realpath(__file__)), 'CHANGELOG.md')) as changelog_file:
     changelog = changelog_file.read()
 
+with open(op.join(op.dirname(op.realpath(__file__)), 'CITATION.md')) as citation_file:
+    citation = citation_file.read()
+
+desc = readme + '\n\n' + changelog + '\n\n' + citation
+try:
+    import pypandoc
+    long_description = pypandoc.convert_text(desc, 'rst', format='md')
+    with open(op.join(op.dirname(op.realpath(__file__)), 'README.rst'), 'w') as rst_readme:
+        rst_readme.write(long_description)
+except (ImportError, OSError, IOError):
+    long_description = desc
+
 install_requires = [
     'cantera>=2.3.0',
     'numpy>=1.8.0',
     'scipy>=0.18.0',
     'pyyaml>-3.12',
     'matplotlib>=1.4.0',
-    'cansen>=1.2.0',
     'pyperclip>=1.5.27'
 ]
 
@@ -33,14 +44,14 @@ setup(
     name='UConnRCMPy',
     version=__version__,
     description='A package to process RCM data',
-    long_description=readme + '\n\n' + changelog,
+    long_description=long_description,
     url='https://github.com/bryanwweber/UConnRCMPy',
     author='Bryan W. Weber',
     author_email='bryan.weber@uconn.edu',
     license='MIT',
     classifiers=[
         'Development Status :: 4 - Beta',
-        'License :: OSI Approved :: MIT License',
+        'License :: OSI Approved :: BSD License',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',

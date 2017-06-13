@@ -8,47 +8,49 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Added
 
 ### Fixed
-- Travis builds now fail appropriately
+- Comparing T_EOC between reactive and non-reactive caused a `ValueError`
 
 ### Changed
 
 ### Removed
 
-## [3.0.0b2] 2017-01-22
-### Fixed
-- Added MANIFEST.in and modified setup.py to include test data files
-
-## [3.0.0b1] - 2017-01-22
+## [3.0.2] - 2017-04-19
 ### Added
+- CITATION file
+- PyPI packages
+
+### Fixed
+- Deploy doctr to the root directory (see [drdoctr/doctr#157](https://github.com/drdoctr/doctr/issues/157) and [drdoctr/doctr#160](https://github.com/drdoctr/doctr/issues/160))
+
+### Changed
+- DOI badges point to latest DOI from Zenodo
+- Relicensed to BSD 3-Clause
+
+## [3.0.1] - 2017-02-21
+### Added
+- Copy keyword in Experiment init to avoid auto-copy to clipboard
+- Regression tests for Experiment, including ignition delay, p_EOC, and T_EOC estimate
+- `kwargs` are passed through to the Experiment init in `add_experiment`
+
+### Fixed
+- `copy=False` kwarg passed to `add_experiment` in tests fixes tests on Travis
+- Load CTI file instead of from source string to avoid [Cantera/cantera#416](https://github.com/Cantera/cantera/issues/416)
+
+### Changed
+- Butterworth filter is now first order
+- Butterworth filter cutoff frequency is no longer corrected
+- End point for linear fit of filter residuals is chosen automatically
+- Derivative is smoothed with moving average
+
+## [3.0.0] - 2017-02-07
+### Added
+- Print warning when the simulated TCs don't match
 - Python 3.6 builds on Travis
 - Conda builds on Travis/Appveyor upload to anaconda.org when a tag is pushed.
 - Appveyor builds for Windows tests/packaging
-
-### Fixed
-- Replot lines when filtering frequency is changed
-
-## [3.0.0a3] - 2016-12-29
-### Added
 - Prompt user for filter frequency when auto-setting fails
-
-## [3.0.0a2] - 2016-12-23
-### Added
 - Label for raw pressure line
 - Refactor `Simulation` class to new module
-
-### Fixed
-- Fix docs after `dataprocessing` -> `conditions`/`experiments` module split
-- Unsuppress thermo warnings before loading a new CTI file
-- Properly set `reactive_case` and `nonreactive_case`, and other attributes important for the `VolumeTrace` generation
-- Filter frequency has to be set after the experiment sampling frequency is calculated
-- Writing the `volume-trace.yaml` file now has filenames instead of `Path` reprs
-
-### Changed
-- Catch `FileNotFoundError`s instead of `OSError`s when files are missing
-- Raise exceptions if CTI arguments are specified incorrectly to `Experiment`
-
-## [3.0.0a1] - 2016-12-22
-### Added
 - Conda recipe
 - Summary output from `Condition`
 - String input to `Experiment`
@@ -64,9 +66,19 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Version information is stored in `_version.py`
 
 ### Fixed
+- Travis builds now fail appropriately
+- Added MANIFEST.in and modified setup.py to include test data files
+- Replot lines when filtering frequency is changed
+- Fix docs after `dataprocessing` -> `conditions`/`experiments` module split
+- Unsuppress thermo warnings before loading a new CTI file
+- Properly set `reactive_case` and `nonreactive_case`, and other attributes important for the `VolumeTrace` generation
+- Filter frequency has to be set after the experiment sampling frequency is calculated
+- Writing the `volume-trace.yaml` file now has filenames instead of `Path` reprs
 - Time in figure legend has a colon
 
 ### Changed
+- Catch `FileNotFoundError`s instead of `OSError`s when files are missing
+- Raise exceptions if CTI arguments are specified incorrectly to `Experiment`
 - Convert all time axes on figures to ms
 - Split the dataprocessing module into experiments and conditions modules
 - Use slices to compute the derivative of the experimental pressure trace
@@ -75,6 +87,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Minimum version of Cantera is 2.3.0
 
 ### Removed
+- CanSen dependency is no longer required
 - Voltage traces are no longer smoothed, and the smoothing function has been removed
 
 ## [2.1.0] - 2016-05-31
@@ -192,12 +205,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Added
 - Basic functionality of class-based interface to process data
 
-[Unreleased]: https://github.com/bryanwweber/UConnRCMPy/compare/v3.0.0b2...HEAD
-[3.0.0b2]: https://github.com/bryanwweber/UConnRCMPy/compare/v3.0.0b1...v3.0.0b2
-[3.0.0b1]: https://github.com/bryanwweber/UConnRCMPy/compare/v3.0.0a3...v3.0.0b1
-[3.0.0a3]: https://github.com/bryanwweber/UConnRCMPy/compare/v3.0.0a2...v3.0.0a3
-[3.0.0a2]: https://github.com/bryanwweber/UConnRCMPy/compare/v3.0.0a1...v3.0.0a2
-[3.0.0a1]: https://github.com/bryanwweber/UConnRCMPy/compare/v2.1.0...v3.0.0a1
+[Unreleased]: https://github.com/bryanwweber/UConnRCMPy/compare/v3.0.2...HEAD
+[3.0.2]: https://github.com/bryanwweber/UConnRCMPy/compare/v3.0.1...v3.0.2
+[3.0.1]: https://github.com/bryanwweber/UConnRCMPy/compare/v3.0.0...v3.0.1
+[3.0.0]: https://github.com/bryanwweber/UConnRCMPy/compare/v2.1.0...v3.0.0
 [2.1.0]: https://github.com/bryanwweber/UConnRCMPy/compare/v2.0.2...v2.1.0
 [2.0.2]: https://github.com/bryanwweber/UConnRCMPy/compare/v2.0.1...v2.0.2
 [2.0.1]: https://github.com/bryanwweber/UConnRCMPy/compare/v2.0.0...v2.0.1
